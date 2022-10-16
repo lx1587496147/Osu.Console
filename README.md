@@ -1,1 +1,2 @@
-# Osu.Console114514
+# Osu.Console
+A osu client for a terminal!
