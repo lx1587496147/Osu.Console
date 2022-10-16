@@ -7,7 +7,7 @@ internal class Program
     {
         var game = new Game()
             .Use<FpsOverlayController>()
-            .Use<OsuGameController>()
+            .Use<OsuScreenController>()
             .Use<CursorController>()
             .Use<BufferController>()
             .Use<Win32ConsoleInputContoller>()

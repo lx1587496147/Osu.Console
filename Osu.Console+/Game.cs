@@ -25,7 +25,7 @@ namespace Osu.Console
         public async void StartInputCalibration()
         {
             Get<SoundController>().PlayTutorial();
-            Get<OsuGameController>().LoadBeatmap(Properties.Resources.NU_KO___Pochiko_no_Shiawase_na_Nichijou__Long_Version___SnowNiNo____Hard_);
+            //Get<OsuScreenController>().LoadBeatmap(Properties.Resources.NU_KO___Pochiko_no_Shiawase_na_Nichijou__Long_Version___SnowNiNo____Hard_);
         }
         public void Run()
         {

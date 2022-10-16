@@ -9,6 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Gameplay\Beatmap.old" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="Gameplay\Beatmap.old" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 

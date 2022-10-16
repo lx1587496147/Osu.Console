@@ -90,18 +90,20 @@ namespace Osu.Console.Gameplay
                     break;
                 }
             }
-            return timingPoint ?? TimingPoints.Last(x => x is EffectTimingPoint);
+            return timingPoint ?? new EffectTimingPoint();
         }
         public abstract class HitObject
         {
-            public HitObject(Beatmap.HitObject orig)
+            public HitObject(Beatmap.HitObject orig, OsuStdRuntimeBeatmap beatmap)
             {
                 Location = (orig.X, orig.Y);
                 StartTime = orig.StartTime;
                 SoundType = orig.SoundType;
                 CustomSampleBanks = orig.circle?.CustomSampleBanks ?? orig.spinner?.CustomSampleBanks ?? orig.slider?.CustomSampleBanks;
                 NewCombo = (orig.Type & HitObjectType.NewCombo) == HitObjectType.NewCombo;
+                this.beatmap = beatmap;
             }
+            protected OsuStdRuntimeBeatmap beatmap;
             public Point Location { get; set; } = default;
             public double StartTime { get; set; }
             public HitSoundType SoundType { get; set; }
@@ -115,36 +117,36 @@ namespace Osu.Console.Gameplay
             {
                 return DifficultyFadeIn(GetPreempt(ar));
             }
-            public double GetApproachCircleFadeIn(OsuBeatmapDifficulty d)
+            public double GetApproachCircleFadeIn()
             {
-                var ar = d.ApproachRate;
+                var ar = beatmap.Difficulty.ApproachRate;
                 var pr = GetPreempt(ar);
                 var fi = GetFadeIn(ar);
                 return Math.Min(fi * 2, pr);
             }
-            protected double GetDisappearDeltaTime(OsuBeatmapDifficulty d)
+            protected virtual double GetDisappearDeltaTime()
             {
-                var res = GetHitRanges(d.OverallDifficulty);
+                var res = GetHitRanges(beatmap.Difficulty.OverallDifficulty);
                 return res[HitResult.Meh];
             }
             // 是否显示
-            public virtual bool IsVisible(double time, OsuBeatmapDifficulty d)
+            public virtual bool IsVisible(double time)
             {
-                var ar = d.ApproachRate;
-                var od = d.OverallDifficulty;
-                return ShouldPreempt(time, d) || !ShouldDisappear(time, d);
+                var ar = beatmap.Difficulty.ApproachRate;
+                var od = beatmap.Difficulty.OverallDifficulty;
+                return ShouldPreempt(time) || !ShouldDisappear(time);
             }
             // Hidden Behavior: Fade Out
-            public virtual bool ShouldPreempt(double time, OsuBeatmapDifficulty d)
+            public virtual bool ShouldPreempt(double time)
             {
                 var v = StartTime - time;
-                return v > 0 && v <= GetPreempt(d.ApproachRate);
+                return v > 0 && v <= GetPreempt(beatmap.Difficulty.ApproachRate);
             }
-            public virtual bool ShouldDisappear(double time, OsuBeatmapDifficulty d)
+            public virtual bool ShouldDisappear(double time)
             {
                 var v = StartTime - time;
-                var delta = GetDisappearDeltaTime(d);
-                if (!ShouldPreempt(time, d))
+                var delta = GetDisappearDeltaTime();
+                if (!ShouldPreempt(time))
                 {
                     return v > delta;
                 }
@@ -153,19 +155,20 @@ namespace Osu.Console.Gameplay
         }
         public class HitObjectCircle : HitObject
         {
-            public HitObjectCircle(Beatmap.HitObject orig) : base(orig)
+            public HitObjectCircle(Beatmap.HitObject orig,OsuStdRuntimeBeatmap beatmap) : base(orig,beatmap)
             {
                 Debug.Assert((orig.Type & HitObjectType.Circle) == HitObjectType.Circle);
             }
         }
         public class HitObjectSlider : HitObject
         {
-            public HitObjectSlider(Beatmap.HitObject orig) : base(orig)
+            public HitObjectSlider(Beatmap.HitObject orig, OsuStdRuntimeBeatmap beatmap) : base(orig, beatmap)
             {
                 Debug.Assert((orig.Type & HitObjectType.Slider) == HitObjectType.Slider);
             }
 
             public int RepeatCount { get; set; }
+            public double TotalLength => Length * RepeatCount;
             public double Length => CalcLength();
             public double CalcLength()
             {
@@ -188,7 +191,18 @@ namespace Osu.Console.Gameplay
             }
             public Point GetSliderBallPosition()
             {
+                return InvaildPoint;
+            }
+            public override bool ShouldDisappear(double time)
+            {
+                if(base.ShouldDisappear(time))
+                {
+                    var len = Length * RepeatCount;
+                    var basetp = beatmap.GetCurrentBaseTimingPoint(StartTime);
+                    var effecttp = beatmap.GetCurrentEffectTimingPoint(StartTime);
 
+                }
+                return false;
             }
             public double Speed { get; set; }
             // For score v1 calc the score of a slider(also judgement)
@@ -197,7 +211,7 @@ namespace Osu.Console.Gameplay
         }
         public class HitObjectSpinner : HitObject
         {
-            public HitObjectSpinner(Beatmap.HitObject orig) : base(orig)
+            public HitObjectSpinner(Beatmap.HitObject orig, OsuStdRuntimeBeatmap beatmap) : base(orig, beatmap)
             {
                 Debug.Assert((orig.Type & HitObjectType.Spinner) == HitObjectType.Spinner);
                 EndTime = orig.spinner.EndTime;
